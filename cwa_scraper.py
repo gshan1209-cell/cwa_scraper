@@ -60,8 +60,48 @@ def preview_json_data(data):
     Prints a simple overview of the retrieved forecast dataset.
     """
     try:
-        # CWA response structure usually has success and records
-        if "records" in data:
+        if "cwaopendata" in data:
+            cwa = data["cwaopendata"]
+            title = cwa.get("datasetName", "一週農業氣象預報")
+            metadata = cwa.get("resources", {}).get("resource", {}).get("metadata", {})
+            issue_time = metadata.get("temporal", {}).get("issueTime", "未知時間")
+            print(f"\n[預覽] 資料集名稱: {title}")
+            print(f"[預覽] 發布時間: {issue_time}")
+            
+            agr = cwa.get("resources", {}).get("resource", {}).get("data", {}).get("agrWeatherForecasts", {})
+            profile = agr.get("weatherProfile", "")
+            if profile:
+                print(f"\n[預覽] 天氣概況:\n{profile}")
+                
+            locations = agr.get("weatherForecasts", {}).get("location", [])
+            if locations:
+                print(f"\n[預覽] 各地區預報 (前 3 天):")
+                for loc in locations:
+                    loc_name = loc.get("locationName", "未知區域")
+                    print(f"  ● {loc_name}:")
+                    
+                    # Get weather, min temp, max temp daily lists
+                    wx_daily = loc.get("weatherElements", {}).get("Wx", {}).get("daily", [])
+                    mint_daily = loc.get("weatherElements", {}).get("MinT", {}).get("daily", [])
+                    maxt_daily = loc.get("weatherElements", {}).get("MaxT", {}).get("daily", [])
+                    
+                    # Print first 3 days
+                    for i in range(min(3, len(wx_daily))):
+                        date = wx_daily[i].get("dataDate", "")
+                        wx_desc = wx_daily[i].get("weather", "")
+                        
+                        min_temp = ""
+                        max_temp = ""
+                        if i < len(mint_daily):
+                            min_temp = mint_daily[i].get("temperature", "")
+                        if i < len(maxt_daily):
+                            max_temp = maxt_daily[i].get("temperature", "")
+                            
+                        temp_str = f" ({min_temp}~{max_temp}°C)" if min_temp or max_temp else ""
+                        print(f"    - {date}: {wx_desc}{temp_str}")
+            else:
+                print("[預覽] 未找到區域預報資料。")
+        elif "records" in data:
             records = data["records"]
             
             # Print dataset info
@@ -72,8 +112,6 @@ def preview_json_data(data):
             print(f"[Preview] Last Update: {update_time}")
             
             # Print some content summary if available
-            # Agriculture forecast structure typically has locations/regions under records
-            # Let's inspect location or agriculturalInfo
             locations = records.get("location", []) or records.get("agriculturalInfo", {}).get("location", [])
             
             if locations:
@@ -101,7 +139,6 @@ def preview_json_data(data):
                 if len(locations) > 4:
                     print(f"  - ... and {len(locations) - 4} more locations.")
             else:
-                # Fallback to general structures
                 print("[Preview] Retreived JSON records keys:", list(records.keys()))
         else:
             print("[Preview] Retrieved JSON format differs from typical CWA API responses.")
