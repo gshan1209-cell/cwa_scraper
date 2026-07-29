@@ -1,0 +1,66 @@
+schemaVersion: "1.0"
+
+identity:
+  repoId: cwa-scraper
+  repository: gshan1209-cell/cwa_scraper
+  repoClass: adapter
+  productId: null
+  productLineId: weather-data-integration
+
+ownership:
+  primaryOperatingUnit: system-development-studio
+  participatingUnits:
+    - ai-module-factory
+  maintainer: cwa-scraper-owner
+
+lifecycle:
+  status: active
+  portfolioClass: supporting
+  mode: command-line-data-adapter
+  currentPhase: cli-adapter-baseline
+
+independentOperation:
+  build: true
+  test: not-assessed
+  deploy: not-applicable
+  release: source-distribution
+  requiresCeoRuntime: false
+  requiresStudioRuntime: false
+
+interfaces:
+  provides:
+    - cwa-file-download-v1
+    - cwa-json-xml-output-v1
+  consumes:
+    - cwa-open-data-file-api-v1
+    - human-agent-dual-interface-standard-v1
+
+management:
+  managementPolicy: optional
+  managementStatus: managed
+  managementReason: reusable CWA OpenData adapter for weather-data consumers
+  ceoReportingEnabled: true
+  dualInterfaceProfile: minimal
+  sourceOfTruthPaths:
+    - README.md
+    - AGENTS.md
+    - cwa_scraper.py
+    - requirements.txt
+
+status:
+  implementation: existing-cli
+  humanInterface: implemented-verification-pending
+  agentInterface: implemented-verification-pending
+  runtime: not-run-for-current-adoption-change
+  verification: not-run
+  productionReadiness: not-ready
+
+security:
+  credentialStorageInGit: forbidden
+  apiKeyInContextOrEvidence: forbidden
+  commandLineSecretUsage: discouraged
+  tlsVerificationBypassForProduction: forbidden
+  automaticCrossRepositoryWrites: disabled
+  automaticMerge: disabled
+  automaticRelease: disabled
+  automaticDeployment: disabled
