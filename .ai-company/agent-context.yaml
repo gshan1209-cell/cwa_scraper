@@ -2,85 +2,103 @@ schemaVersion: "1.0"
 systemIdentity:
   repository: gshan1209-cell/cwa_scraper
   systemId: cwa-scraper
-  systemType: adapter
+  systemType: shared-weather-data-adapter
+  governanceLevel: L4
   profile: minimal
+  parentSystem: gshan1209-cell/AI-Workstream
   roles:
     - cwa-open-data-download-adapter
+    - shared-weather-data-adapter
     - weather-file-ingestion-helper
 
 context:
-  generatedAt: "2026-07-29T15:33:00+08:00"
-  freshness: unknown
+  generatedAt: "2026-07-29T19:12:46+08:00"
+  freshness: reviewed-source-recorded
   depth: brief
-  digest: sha256:2a73f3131a62d9a96c50f6fb270d1ba088d343c1975652253ac14dee1eae8a21
-  digestBasis: repository-profile-phase-status-next-action-and-source-references
-  changedSinceDigest: null
+  changedSinceDigest: implementation-updated-pending-independent-verification
   canonical: false
   readOnly: true
-  status: baseline-recorded
+  status: implementation-complete-verification-pending
 
 briefing:
-  headline: CWA Scraper is an existing Python CLI for downloading CWA JSON or XML files; current compile, failure-state, TLS and live-data behavior were not validated in this adoption change.
-  currentPhase: cli-adapter-baseline
+  headline: CWA Scraper now implements TLS fail-closed behavior and explicit failure states; compile, fixture behavior and redacted live download remain unverified until a Codex test-only PR is completed.
+  currentPhase: tls-fail-closed-remediation
   highestPriority:
-    - validate Python compile and CLI help
-    - verify explicit failure behavior for missing key, 401, 404, timeout and invalid JSON
-    - assess and remove unsafe automatic TLS verification bypass before production use
+    - merge the focused security implementation without claiming Runtime verification
+    - run independent compile, CLI, fixture, TLS and failure-state validation
+    - execute one redacted live CWA download in a controlled environment
 
 state:
-  status: implemented-verification-pending
-  phase: cli-adapter-baseline
+  status: implementation-complete-verification-pending
+  phase: tls-fail-closed-remediation
   progress: null
   confidence: reported
   integrity: not-tested
+  productionStatus: blocked-pending-independent-verification
+  verifiedConformance: false
 
 attention:
   blockers:
+    - id: independent-security-validation-required
+      status: open
+      severity: high
+      title: Production remains blocked until Codex verifies TLS fail-closed behavior and failure states on the exact remediated Head.
     - id: live-cwa-key-required
       status: conditional
       severity: medium
-      title: A redacted live-data validation requires a valid CWA API key in a controlled environment.
+      title: Redacted live-data validation requires a valid CWA API key in a controlled environment.
   risks:
-    - id: tls-verification-bypass
-      status: open
-      severity: high
-      title: Current code retries with verify=False after an SSL verification failure.
     - id: command-line-secret-exposure
-      status: open
+      status: mitigated-pending-verification
       severity: medium
-      title: Passing the API key through command-line arguments may expose it in shell history or process listings.
+      title: --api-key remains for backward compatibility but now emits a warning; environment or hidden interactive input is required for normal use.
+    - id: invalid-json-success-confusion
+      status: mitigated-pending-verification
+      severity: high
+      title: Invalid JSON now fails without writing an output file, but the behavior has not yet been independently executed.
     - id: downloaded-file-not-canonical
       status: open
       severity: medium
-      title: Downloaded files are runtime evidence or cache and must not be treated as independently authored official data.
+      title: Downloaded files are Runtime Evidence or Cache and must not be treated as independently authored official data.
+  resolvedInImplementation:
+    - id: tls-verification-bypass
+      previousStatus: open-high
+      implementationStatus: removed-pending-verification
+      title: Automatic retry with verify=False was removed; SSL failure now exits fail-closed.
   driftFindings: []
   pullRequests: []
 
 execution:
   nextActions:
-    - id: validate-cwa-cli-baseline
+    - id: codex-verify-cwa-security-baseline
       priority: P0
-      status: ready
-      owner: cwa-scraper-owner
-      title: Validate CLI compile, help, failure states, TLS behavior, and one redacted live CWA download.
+      status: ready-after-implementation-merge
+      owner: codex
+      title: Create a test-only PR validating compile, CLI help, failure states, TLS call count, no verify=False, output behavior, and one redacted live download.
   owners:
     - id: cwa-scraper-owner
       responsibility: adapter-code-dataset-parameters-output-and-release
     - id: ai-workstream
-      responsibility: dual-interface-template-planner-validator-and-adoption-flow
+      responsibility: parent-system-company-module-and-development-execution-policy
     - id: github-knowledge-hub
-      responsibility: architecture-standard-and-compliance-assessment
+      responsibility: canonical-governance-standard-and-compliance-assessment
     - id: ai-ceo-control-tower
-      responsibility: portfolio-observation-and-global-context
+      responsibility: portfolio-read-model-and-global-context
     - id: codex
-      responsibility: controlled-live-api-and-environment-validation-when-required
+      responsibility: independent-controlled-live-api-and-environment-validation
+  consumers:
+    - gshan1209-cell/smartbuy-ai
+    - gshan1209-cell/scrape_weather
   dependencies:
     - source: cwa-scraper
       dependsOn: cwa-open-data-file-api-v1
       purpose: official weather dataset retrieval
     - source: cwa-scraper
-      dependsOn: gshan1209-cell/GitHub-Knowledge-Hub@0bbac3faa636aa073e8e59eac7dc3bc0ea0bd27b
-      purpose: canonical Human／Agent dual-interface standard
+      dependsOn: gshan1209-cell/AI-Workstream
+      purpose: parent system and development execution policy
+    - source: cwa-scraper
+      dependsOn: gshan1209-cell/GitHub-Knowledge-Hub@561c7eee0dfdfae4ae070ff47e9b383029c6268e
+      purpose: approved Evidence Contract and governance decisions
   allowedOperations:
     - read-derived-context
     - inspect-source-and-official-dataset-references
@@ -93,29 +111,40 @@ execution:
     - expose-or-persist-api-key
     - mark-live-download-as-passed-without-execution
     - normalize-failure-to-empty-success
-    - make-tls-bypass-a-production-default
+    - disable-tls-verification
+    - retry-with-verify-false
     - automatic-merge-release-or-deployment
   humanApprovalRequiredFor:
     - credential-or-secret-change
     - production-tls-policy-change
     - official-dataset-or-source-change
     - downstream-canonical-import
+    - production-unblock
     - release-or-scheduled-deployment
   primaryDevelopmentAgent: current-task-owner
-  codexRole: controlled-live-api-and-environment-validation-when-required
+  codexRole: independent-test-only-validation-on-exact-remediated-head
 
 evidence:
-  sourceCommit: null
+  observedSourceSha: aea842f51478ca3645b241094e69481fe2f30028
+  observedBranch: main
+  reviewedAt: "2026-07-29T19:12:46+08:00"
+  reviewer: ChatGPT-primary-development-agent
+  verificationStatus: not-run
   sourceRefs:
     - README.md
     - AGENTS.md
     - cwa_scraper.py
     - requirements.txt
     - .ai-company/repo-manifest.yaml
+    - .ai-company/dual-interface.yaml
+    - .ai-company/status-snapshot.yaml
+  evidenceRefs:
+    - github://gshan1209-cell/GitHub-Knowledge-Hub/issues/14
+    - github://gshan1209-cell/GitHub-Knowledge-Hub/commit/561c7eee0dfdfae4ae070ff47e9b383029c6268e
   verificationRefs: []
 
 limitations:
-  - Python compile and CLI help were not executed in this adoption change.
+  - Python compile and CLI help were not executed by this GitHub-only implementation change.
+  - Failure-state mocks and filesystem behavior were not executed.
   - No live CWA request was executed and no API key was accessed.
-  - Existing automatic TLS verification bypass remains an open risk and was not modified by this governance-only change.
-  - Digest is a static baseline; automatic regeneration and since-digest comparison are not implemented.
+  - Production remains blocked until independent Test-only Evidence exists.

@@ -1,266 +1,389 @@
 #!/usr/bin/env python3
 """
 CWA Open Data Scraper
-Author: Antigravity
 
-This script downloads the weather forecast files (specifically F-A0010-001,
-"一週農業氣象預報") from the Taiwan Central Weather Administration (CWA)
-Open Data Platform.
+Downloads weather forecast files from the Taiwan Central Weather
+Administration (CWA) Open Data Platform.
+
+Security policy:
+- TLS certificate verification is always enabled.
+- SSL verification failures fail closed and are never retried with verify=False.
+- CWA_API_KEY from the environment is preferred.
+- --api-key remains only for backward compatibility and emits a warning because
+  command-line arguments can be exposed through shell history or process lists.
 """
 
+from __future__ import annotations
+
+import argparse
+import getpass
+import json
 import os
 import sys
-import json
-import argparse
 from datetime import datetime
+
 import requests
 from dotenv import load_dotenv
 
-# Load environment variables from .env file if it exists
+
+EXIT_OK = 0
+EXIT_CONFIG = 2
+EXIT_TLS = 3
+EXIT_NETWORK = 4
+EXIT_HTTP = 5
+EXIT_PARSE = 6
+EXIT_WRITE = 7
+
+DEFAULT_DATASET = "F-A0010-001"
+DEFAULT_TIMEOUT_SECONDS = 30
+CWA_FILE_API_BASE_URL = "https://opendata.cwa.gov.tw/fileapi/v1/opendataapi"
+
+# Load environment variables from .env when present. Secrets must never be
+# written to logs, output files, Agent Context, or Evidence records.
 load_dotenv()
 
-def parse_arguments():
+
+def parse_arguments(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Download forecast dataset files from the Taiwan Central Weather Administration (CWA)."
+        description=(
+            "Download forecast dataset files from the Taiwan Central Weather "
+            "Administration (CWA)."
+        )
     )
     parser.add_argument(
-        "-k", "--api-key",
+        "-k",
+        "--api-key",
         type=str,
-        default=os.getenv("CWA_API_KEY"),
-        help="CWA API Authorization Code. Can also be set in .env as CWA_API_KEY."
+        default=None,
+        help=(
+            "Deprecated compatibility option. Prefer the CWA_API_KEY environment "
+            "variable because command-line secrets may be exposed."
+        ),
     )
     parser.add_argument(
-        "-d", "--dataset",
+        "-d",
+        "--dataset",
         type=str,
-        default="F-A0010-001",
-        help="Dataset identifier (default: F-A0010-001)."
+        default=DEFAULT_DATASET,
+        help=f"Dataset identifier (default: {DEFAULT_DATASET}).",
     )
     parser.add_argument(
-        "-f", "--format",
+        "-f",
+        "--format",
         type=str,
         choices=["JSON", "XML"],
         default="JSON",
-        help="Output data format (default: JSON)."
+        help="Output data format (default: JSON).",
     )
     parser.add_argument(
-        "-o", "--out-dir",
+        "-o",
+        "--out-dir",
         type=str,
         default="downloads",
-        help="Directory to save downloaded files (default: downloads)."
+        help="Directory to save downloaded files (default: downloads).",
     )
     parser.add_argument(
         "--no-pretty",
         action="store_true",
-        help="Disable JSON pretty printing."
+        help="Disable JSON pretty printing.",
     )
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
-def preview_json_data(data):
-    """
-    Prints a simple overview of the retrieved forecast dataset.
-    """
+
+def resolve_api_key(args: argparse.Namespace) -> str | None:
+    """Resolve the API key without exposing it in output or logs."""
+    environment_key = os.getenv("CWA_API_KEY")
+    if environment_key:
+        return environment_key.strip()
+
+    if args.api_key:
+        print(
+            "Security warning: --api-key is retained only for backward "
+            "compatibility. Prefer CWA_API_KEY because command-line secrets may "
+            "appear in shell history or process listings.",
+            file=sys.stderr,
+        )
+        return args.api_key.strip()
+
+    if sys.stdin.isatty():
+        try:
+            return getpass.getpass("Please enter your CWA API Key: ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print("\nOperation cancelled.", file=sys.stderr)
+            return None
+
+    return None
+
+
+def preview_json_data(data: object) -> None:
+    """Print a small, non-authoritative preview of a retrieved JSON dataset."""
     try:
+        if not isinstance(data, dict):
+            print("[Preview] Retrieved JSON root is not an object.")
+            return
+
         if "cwaopendata" in data:
             cwa = data["cwaopendata"]
+            if not isinstance(cwa, dict):
+                print("[Preview] Unexpected cwaopendata structure.")
+                return
+
             title = cwa.get("datasetName", "一週農業氣象預報")
             metadata = cwa.get("resources", {}).get("resource", {}).get("metadata", {})
             issue_time = metadata.get("temporal", {}).get("issueTime", "未知時間")
             print(f"\n[預覽] 資料集名稱: {title}")
             print(f"[預覽] 發布時間: {issue_time}")
-            
-            agr = cwa.get("resources", {}).get("resource", {}).get("data", {}).get("agrWeatherForecasts", {})
+
+            agr = (
+                cwa.get("resources", {})
+                .get("resource", {})
+                .get("data", {})
+                .get("agrWeatherForecasts", {})
+            )
             profile = agr.get("weatherProfile", "")
             if profile:
                 print(f"\n[預覽] 天氣概況:\n{profile}")
-                
+
             locations = agr.get("weatherForecasts", {}).get("location", [])
             if locations:
-                print(f"\n[預覽] 各地區預報 (前 3 天):")
-                for loc in locations:
-                    loc_name = loc.get("locationName", "未知區域")
-                    print(f"  ● {loc_name}:")
-                    
-                    # Get weather, min temp, max temp daily lists
-                    wx_daily = loc.get("weatherElements", {}).get("Wx", {}).get("daily", [])
-                    mint_daily = loc.get("weatherElements", {}).get("MinT", {}).get("daily", [])
-                    maxt_daily = loc.get("weatherElements", {}).get("MaxT", {}).get("daily", [])
-                    
-                    # Print first 3 days
-                    for i in range(min(3, len(wx_daily))):
-                        date = wx_daily[i].get("dataDate", "")
-                        wx_desc = wx_daily[i].get("weather", "")
-                        
-                        min_temp = ""
-                        max_temp = ""
-                        if i < len(mint_daily):
-                            min_temp = mint_daily[i].get("temperature", "")
-                        if i < len(maxt_daily):
-                            max_temp = maxt_daily[i].get("temperature", "")
-                            
-                        temp_str = f" ({min_temp}~{max_temp}°C)" if min_temp or max_temp else ""
-                        print(f"    - {date}: {wx_desc}{temp_str}")
+                print("\n[預覽] 各地區預報 (前 3 天):")
+                for location in locations:
+                    location_name = location.get("locationName", "未知區域")
+                    print(f"  ● {location_name}:")
+
+                    weather_elements = location.get("weatherElements", {})
+                    weather_daily = weather_elements.get("Wx", {}).get("daily", [])
+                    minimum_daily = weather_elements.get("MinT", {}).get("daily", [])
+                    maximum_daily = weather_elements.get("MaxT", {}).get("daily", [])
+
+                    for index in range(min(3, len(weather_daily))):
+                        date = weather_daily[index].get("dataDate", "")
+                        description = weather_daily[index].get("weather", "")
+                        minimum = (
+                            minimum_daily[index].get("temperature", "")
+                            if index < len(minimum_daily)
+                            else ""
+                        )
+                        maximum = (
+                            maximum_daily[index].get("temperature", "")
+                            if index < len(maximum_daily)
+                            else ""
+                        )
+                        temperature = (
+                            f" ({minimum}~{maximum}°C)" if minimum or maximum else ""
+                        )
+                        print(f"    - {date}: {description}{temperature}")
             else:
                 print("[預覽] 未找到區域預報資料。")
-        elif "records" in data:
+            return
+
+        if "records" in data:
             records = data["records"]
-            
-            # Print dataset info
+            if not isinstance(records, dict):
+                print("[Preview] Unexpected records structure.")
+                return
+
             dataset_info = records.get("datasetInfo", {})
             title = dataset_info.get("datasetName", "一週農業氣象預報")
             update_time = dataset_info.get("updateDate", "Unknown")
             print(f"\n[Preview] Dataset: {title}")
             print(f"[Preview] Last Update: {update_time}")
-            
-            # Print some content summary if available
-            locations = records.get("location", []) or records.get("agriculturalInfo", {}).get("location", [])
-            
+
+            locations = records.get("location", []) or records.get(
+                "agriculturalInfo", {}
+            ).get("location", [])
             if locations:
                 print(f"[Preview] Found forecasts for {len(locations)} locations/regions:")
-                for loc in locations[:4]: # Limit to first 4 for preview
-                    loc_name = loc.get("locationName", "Unknown Location")
-                    # Weather elements
-                    we_str = []
-                    weather_elements = loc.get("weatherElement", [])
-                    for elem in weather_elements[:2]:
-                        elem_name = elem.get("elementName", "")
-                        # Try to get value or time values
-                        time_vals = elem.get("time", [])
-                        if time_vals:
-                            val = time_vals[0].get("elementValue", {}).get("value", "")
-                            if not val and "parameter" in time_vals[0]:
-                                val = time_vals[0]["parameter"].get("parameterName", "")
-                            if val:
-                                we_str.append(f"{elem_name}: {val}")
-                    
-                    if we_str:
-                        print(f"  - {loc_name} ({', '.join(we_str)})")
-                    else:
-                        print(f"  - {loc_name}")
+                for location in locations[:4]:
+                    location_name = location.get("locationName", "Unknown Location")
+                    values: list[str] = []
+                    for element in location.get("weatherElement", [])[:2]:
+                        element_name = element.get("elementName", "")
+                        time_values = element.get("time", [])
+                        if not time_values:
+                            continue
+                        first_value = time_values[0]
+                        value = first_value.get("elementValue", {}).get("value", "")
+                        if not value and "parameter" in first_value:
+                            value = first_value["parameter"].get("parameterName", "")
+                        if value:
+                            values.append(f"{element_name}: {value}")
+                    suffix = f" ({', '.join(values)})" if values else ""
+                    print(f"  - {location_name}{suffix}")
                 if len(locations) > 4:
                     print(f"  - ... and {len(locations) - 4} more locations.")
             else:
-                print("[Preview] Retreived JSON records keys:", list(records.keys()))
-        else:
-            print("[Preview] Retrieved JSON format differs from typical CWA API responses.")
-    except Exception as e:
-        print(f"[Preview Warning] Could not parse forecast preview: {e}")
+                print("[Preview] Retrieved JSON records keys:", list(records.keys()))
+            return
 
-def main():
-    args = parse_arguments()
-    api_key = args.api_key
-    
-    # If API key is not provided, prompt the user if it's an interactive shell, or error
-    if not api_key:
-        if sys.stdin.isatty():
-            print("CWA API Authorization Code (API Key) not found in environment or arguments.")
-            try:
-                api_key = input("Please enter your CWA API Key: ").strip()
-            except KeyboardInterrupt:
-                print("\nOperation cancelled.")
-                sys.exit(1)
-        
-        if not api_key:
-            print("Error: CWA API key is required. Get yours at https://opendata.cwa.gov.tw/", file=sys.stderr)
-            print("Set it in a .env file (CWA_API_KEY=xxx) or pass it via --api-key / -k.", file=sys.stderr)
-            sys.exit(1)
+        print("[Preview] Retrieved JSON format differs from typical CWA responses.")
+    except (AttributeError, IndexError, TypeError, ValueError) as error:
+        print(f"[Preview Warning] Could not parse forecast preview: {error}")
 
-    # Clean the format variable (CWA api accepts uppercase/lowercase sometimes, but let's standardize)
-    fmt = args.format.upper()
-    
-    # Construct the download URL for File API (v1)
-    # URL pattern: https://opendata.cwa.gov.tw/fileapi/v1/opendataapi/{dataset}?Authorization={api_key}&format={format}
-    url = f"https://opendata.cwa.gov.tw/fileapi/v1/opendataapi/{args.dataset}"
-    
-    params = {
-        "Authorization": api_key,
-        "format": fmt
-    }
-    
-    print(f"Connecting to CWA Open Data Platform to fetch dataset: {args.dataset} ({fmt})...")
-    
-    # Suppress SSL certificate verification warning if verification is bypassed
-    import urllib3
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    
+
+def request_dataset(
+    *, dataset: str, output_format: str, api_key: str
+) -> requests.Response:
+    """Request a CWA dataset with mandatory TLS verification."""
+    url = f"{CWA_FILE_API_BASE_URL}/{dataset}"
+    params = {"Authorization": api_key, "format": output_format}
+
+    # Do not add verify=False or an SSL fallback. The default verify=True is a
+    # mandatory production invariant approved in Wave 1D Decision D6.
+    return requests.get(url, params=params, timeout=DEFAULT_TIMEOUT_SECONDS)
+
+
+def validate_response(response: requests.Response, dataset: str) -> int:
+    if response.status_code == 401:
+        print(
+            "Error 401: Unauthorized. Check whether CWA_API_KEY is valid.",
+            file=sys.stderr,
+        )
+        return EXIT_HTTP
+    if response.status_code == 404:
+        print(
+            f"Error 404: Dataset '{dataset}' was not found.",
+            file=sys.stderr,
+        )
+        return EXIT_HTTP
+
     try:
-        try:
-            response = requests.get(url, params=params, timeout=30)
-        except requests.exceptions.SSLError as ssl_err:
-            print(f"Warning: SSL certificate verification failed ({ssl_err}).")
-            print("Retrying with SSL verification disabled...")
-            response = requests.get(url, params=params, timeout=30, verify=False)
-        
-        # Check HTTP status code
-        if response.status_code == 401:
-            print("Error 401: Unauthorized. Please check if your CWA API Key is valid.", file=sys.stderr)
-            sys.exit(1)
-        elif response.status_code == 404:
-            print(f"Error 404: Dataset '{args.dataset}' not found. Make sure the ID is correct.", file=sys.stderr)
-            sys.exit(1)
-        
         response.raise_for_status()
-        
-    except requests.exceptions.RequestException as e:
-        print(f"HTTP Request failed: {e}", file=sys.stderr)
-        sys.exit(1)
+    except requests.exceptions.HTTPError as error:
+        status = response.status_code
+        print(f"HTTP error {status}: {error}", file=sys.stderr)
+        return EXIT_HTTP
 
-    # Ensure output directory exists
-    os.makedirs(args.out_dir, exist_ok=True)
-    
-    # Generate output file name with timestamp
+    return EXIT_OK
+
+
+def save_response(
+    *,
+    response: requests.Response,
+    output_format: str,
+    dataset: str,
+    output_directory: str,
+    pretty_json: bool,
+) -> tuple[int, str | None]:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    extension = fmt.lower()
-    filename = f"{args.dataset}_{timestamp}.{extension}"
-    filepath = os.path.join(args.out_dir, filename)
-    
-    print(f"Download complete. Processing content...")
-    
-    # Save the content
+    extension = output_format.lower()
+    filename = f"{dataset}_{timestamp}.{extension}"
+    filepath = os.path.join(output_directory, filename)
+
     try:
-        if fmt == "JSON":
-            try:
-                json_data = response.json()
-                
-                # Check for API error response disguised as a 200 OK JSON
-                # e.g., {"success": "false", "message": "..."} or similar
-                if isinstance(json_data, dict) and json_data.get("success") == "false":
-                    message = json_data.get("message", "Unknown API error")
-                    print(f"API Error: {message}", file=sys.stderr)
-                    sys.exit(1)
-                
-                with open(filepath, "w", encoding="utf-8") as f:
-                    if not args.no_pretty:
-                        json.dump(json_data, f, ensure_ascii=False, indent=2)
-                    else:
-                        json.dump(json_data, f, ensure_ascii=False)
-                
-                print(f"Saved dataset file to: {os.path.abspath(filepath)}")
-                
-                # Provide a quick terminal preview
-                preview_json_data(json_data)
-                
-            except json.JSONDecodeError:
-                # In case response is not valid JSON
-                print("Warning: Response was expected to be JSON but could not be parsed. Saving raw content.", file=sys.stderr)
-                with open(filepath, "wb") as f:
-                    f.write(response.content)
-                print(f"Saved raw content to: {os.path.abspath(filepath)}")
-        else:
-            # XML or other formats, save raw content
-            with open(filepath, "wb") as f:
-                f.write(response.content)
-            print(f"Saved dataset file to: {os.path.abspath(filepath)}")
-            
-            # Simple preview for XML
-            if fmt == "XML":
-                snippet = response.text[:400]
-                print(f"\n[Preview] XML snippet:\n{snippet}...")
-                
-    except IOError as e:
-        print(f"Failed to write file to disk: {e}", file=sys.stderr)
-        sys.exit(1)
-        
+        os.makedirs(output_directory, exist_ok=True)
+    except OSError as error:
+        print(f"Failed to create output directory: {error}", file=sys.stderr)
+        return EXIT_WRITE, None
+
+    if output_format == "JSON":
+        try:
+            json_data = response.json()
+        except ValueError as error:
+            print(
+                "Invalid JSON response: expected JSON but parsing failed. "
+                "No output file was written.",
+                file=sys.stderr,
+            )
+            print(f"Parser detail: {error}", file=sys.stderr)
+            return EXIT_PARSE, None
+
+        if isinstance(json_data, dict) and json_data.get("success") in {
+            False,
+            "false",
+            "False",
+        }:
+            message = json_data.get("message", "Unknown CWA API error")
+            print(f"CWA API error: {message}", file=sys.stderr)
+            return EXIT_HTTP, None
+
+        try:
+            with open(filepath, "w", encoding="utf-8") as output_file:
+                json.dump(
+                    json_data,
+                    output_file,
+                    ensure_ascii=False,
+                    indent=2 if pretty_json else None,
+                )
+        except OSError as error:
+            print(f"Failed to write output file: {error}", file=sys.stderr)
+            return EXIT_WRITE, None
+
+        preview_json_data(json_data)
+        return EXIT_OK, filepath
+
+    try:
+        with open(filepath, "wb") as output_file:
+            output_file.write(response.content)
+    except OSError as error:
+        print(f"Failed to write output file: {error}", file=sys.stderr)
+        return EXIT_WRITE, None
+
+    snippet = response.text[:400]
+    print(f"\n[Preview] XML snippet:\n{snippet}...")
+    return EXIT_OK, filepath
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_arguments(argv)
+    api_key = resolve_api_key(args)
+    if not api_key:
+        print(
+            "Error: CWA API key is required. Set CWA_API_KEY in the environment "
+            "or enter it interactively in a secure terminal.",
+            file=sys.stderr,
+        )
+        return EXIT_CONFIG
+
+    output_format = args.format.upper()
+    print(
+        "Connecting to CWA Open Data Platform "
+        f"for dataset {args.dataset} ({output_format}) with TLS verification enabled..."
+    )
+
+    try:
+        response = request_dataset(
+            dataset=args.dataset,
+            output_format=output_format,
+            api_key=api_key,
+        )
+    except requests.exceptions.SSLError as error:
+        print(
+            "TLS verification failed. The request was stopped and will not be "
+            "retried with certificate verification disabled.",
+            file=sys.stderr,
+        )
+        print(f"TLS detail: {error}", file=sys.stderr)
+        return EXIT_TLS
+    except requests.exceptions.Timeout as error:
+        print(f"CWA request timed out: {error}", file=sys.stderr)
+        return EXIT_NETWORK
+    except requests.exceptions.ConnectionError as error:
+        print(f"CWA connection failed: {error}", file=sys.stderr)
+        return EXIT_NETWORK
+    except requests.exceptions.RequestException as error:
+        print(f"CWA request failed: {error}", file=sys.stderr)
+        return EXIT_NETWORK
+
+    validation_result = validate_response(response, args.dataset)
+    if validation_result != EXIT_OK:
+        return validation_result
+
+    result, filepath = save_response(
+        response=response,
+        output_format=output_format,
+        dataset=args.dataset,
+        output_directory=args.out_dir,
+        pretty_json=not args.no_pretty,
+    )
+    if result != EXIT_OK:
+        return result
+
+    assert filepath is not None
+    print(f"Saved dataset file to: {os.path.abspath(filepath)}")
     print("\nScraping process finished successfully!")
+    return EXIT_OK
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

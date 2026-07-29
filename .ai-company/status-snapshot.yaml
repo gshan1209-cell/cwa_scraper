@@ -1,0 +1,84 @@
+schemaVersion: "1.0"
+repository: gshan1209-cell/cwa_scraper
+reportedAt: "2026-07-29T19:12:46+08:00"
+statusConfidence: reported
+
+governance:
+  level: L4
+  systemType: shared-weather-data-adapter
+  owner: cwa-scraper-owner
+  parentSystem: gshan1209-cell/AI-Workstream
+  consumers:
+    - gshan1209-cell/smartbuy-ai
+    - gshan1209-cell/scrape_weather
+
+currentState:
+  lifecycle: active
+  phase: tls-fail-closed-remediation
+  implementation: complete-pending-merge
+  verification: not-run
+  verifiedConformance: false
+  productionStatus: blocked-pending-independent-verification
+
+security:
+  tlsVerificationRequired: true
+  sslFailurePolicy: fail-closed
+  automaticVerifyFalseRetry: removed-pending-verification
+  invalidJsonPolicy: fail-closed-no-output
+  environmentVariablePreferred: true
+  hiddenInteractiveInput: implemented-pending-verification
+  commandLineSecretUsage: deprecated-compatibility-only
+  credentialExposureCheck: not-run
+
+failureStates:
+  missingApiKey:
+    exitCode: 2
+    verification: not-run
+  tlsFailure:
+    exitCode: 3
+    verification: not-run
+  timeoutOrConnectionFailure:
+    exitCode: 4
+    verification: not-run
+  httpOrApiFailure:
+    exitCode: 5
+    verification: not-run
+  invalidJson:
+    exitCode: 6
+    verification: not-run
+  fileWriteFailure:
+    exitCode: 7
+    verification: not-run
+
+humanInterface:
+  status: implementation-aligned-verification-pending
+  refs:
+    - README.md
+
+agentInterface:
+  status: implementation-aligned-verification-pending
+  refs:
+    - AGENTS.md
+    - .ai-company/agent-context.yaml
+    - .ai-company/dual-interface.yaml
+
+evidence:
+  observedSourceSha: aea842f51478ca3645b241094e69481fe2f30028
+  observedBranch: main
+  reviewedAt: "2026-07-29T19:12:46+08:00"
+  reviewer: ChatGPT-primary-development-agent
+  verificationStatus: not-run
+  evidenceRefs:
+    - github://gshan1209-cell/GitHub-Knowledge-Hub/issues/14
+    - github://gshan1209-cell/GitHub-Knowledge-Hub/commit/561c7eee0dfdfae4ae070ff47e9b383029c6268e
+
+knownLimitations:
+  - Python compile and CLI help were not executed in this GitHub-only implementation change.
+  - Failure-state mocks, filesystem behavior and TLS call-count assertions were not executed.
+  - No live CWA request was executed and no API key was accessed.
+  - Production unblock requires an independent Codex Test-only PR on the exact remediated Head.
+
+nextAction:
+  title: Merge the focused security implementation, then create an independent Codex Test-only PR
+  owner: cwa-scraper-owner
+  status: ready

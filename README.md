@@ -1,87 +1,133 @@
 # CWA 氣象開放資料下載器 (F-A0010-001)
 
-此專案提供了一個 Python 命令列工具，用於自交通部中央氣象署 (CWA) 氣象資料開放平臺下載天氣預報資料集，特別是針對 **F-A0010-001 (一週農業氣象預報)** 資料集。
+此專案提供 Python 命令列工具，用於自交通部中央氣象署（CWA）氣象資料開放平臺下載天氣預報資料集，預設為 **F-A0010-001｜一週農業氣象預報**。
+
+本 Repository 的正式定位是 **L4 共用氣象資料 Adapter**。它負責下載與保存 CWA 回應，不是官方氣象 Canonical Owner，也不自行產生氣象資料或農事決策。
+
+## 安全基線
+
+- TLS 憑證驗證永遠啟用。
+- SSL 驗證失敗時直接停止，禁止改用 `verify=False` 重試。
+- API Key 優先使用 `CWA_API_KEY` 環境變數。
+- `--api-key`／`-k` 只為相容舊用法保留，使用時會顯示安全警告；真實金鑰可能出現在 Shell History 或 Process List，不建議使用。
+- 互動式輸入使用隱藏輸入，不回顯金鑰。
+- API Key 不得寫入 Git、Log、Agent Context 或 Evidence。
+- JSON 解析失敗不會保存原始內容並誤報成功。
+
+目前 Production Status 維持 `blocked-pending-independent-verification`，需由 Codex 完成獨立 Test-only PR 後才能重新評估。
 
 ## 前提條件
 
-1.  **註冊氣象開放資料會員**：
-    *   造訪 [中央氣象署氣象資料開放平臺](https://opendata.cwa.gov.tw/)。
-    *   註冊並登入會員。
-    *   前往「會員專區」 -> 「API 授權碼」，取得您的專屬授權碼 (API Key，通常格式為 `CWA-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`)。
+1. 註冊 CWA 氣象資料開放平臺會員並取得 API 授權碼。
+2. 安裝 Python 3.8 以上版本。
+3. 安裝依賴：
 
-2.  **安裝 Python 依賴套件**：
-    *   確認您的系統已安裝 Python 3.8+。
-    *   使用 pip 安裝所需套件：
-        ```bash
-        pip install -r requirements.txt
-        ```
+```bash
+pip install -r requirements.txt
+```
 
-## 配置方式
+## API Key 設定
 
-您可以透過以下三種方式配置 API 授權碼：
+### 環境變數（推薦）
 
-1.  **環境變數檔案 (推薦)**：
-    將 `.env.example` 複製並重新命名為 `.env`，然後填入您的 API Key：
-    ```env
-    CWA_API_KEY=您的授權碼(CWA-xxxxxxxx-...)
-    ```
+將 `.env.example` 複製為 `.env`，或在執行環境設定：
 
-2.  **命令列參數**：
-    在執行程式時直接透過 `-k` 或 `--api-key` 參數傳入：
-    ```bash
-    python cwa_scraper.py -k 您的授權碼
-    ```
+```env
+CWA_API_KEY=您的授權碼
+```
 
-3.  **互動式輸入**：
-    如果程式未在環境變數或命令列中找到 API Key，且您正在互動式終端機中運行，程式將會主動提示您輸入。
-
-## 使用說明
-
-直接運行腳本，即可下載預設資料集 (`F-A0010-001`) 的 `JSON` 格式檔案：
+直接執行：
 
 ```bash
 python cwa_scraper.py
 ```
 
-### 命令列參數選項
+### 安全互動式輸入
 
-```text
-usage: cwa_scraper.py [-h] [-k API_KEY] [-d DATASET] [-f {JSON,XML}] [-o OUT_DIR] [--no-pretty]
+未設定 `CWA_API_KEY` 且目前是互動式終端機時，程式會以隱藏輸入要求 API Key。
 
-Download forecast dataset files from the Taiwan Central Weather Administration (CWA).
+### 舊版命令列參數（不建議）
 
-options:
-  -h, --help            顯示此說明訊息並結束
-  -k API_KEY, --api-key API_KEY
-                        CWA API 授權碼。亦可在 .env 檔案中設定 CWA_API_KEY。
-  -d DATASET, --dataset DATASET
-                        資料集代碼 (預設: F-A0010-001)。
-  -f {JSON,XML}, --format {JSON,XML}
-                        輸出資料格式 (預設: JSON)。
-  -o OUT_DIR, --out-dir OUT_DIR
-                        存檔目錄路徑 (預設: downloads)。
-  --no-pretty           停用 JSON 格式化輸出。
+```bash
+python cwa_scraper.py --api-key 您的授權碼
 ```
 
-### 使用範例
+此方式僅保留相容性，會顯示安全警告。請勿在正式環境使用真實金鑰。
 
-*   **下載 XML 格式檔案**：
-    ```bash
-    python cwa_scraper.py -f XML
-    ```
+## 使用方式
 
-*   **指定不同的輸出目錄**：
-    ```bash
-    python cwa_scraper.py -o custom_folder
-    ```
+下載預設 JSON 資料集：
 
-*   **下載其他氣象資料集 (例如 F-C0032-001 - 今明 36 小時天氣預報)**：
-    ```bash
-    python cwa_scraper.py -d F-C0032-001
-    ```
+```bash
+python cwa_scraper.py
+```
 
-## 檔案輸出說明
+下載 XML：
 
-下載的檔案將以包含時間戳記的檔名存檔於指定目錄中：
-*   `downloads/F-A0010-001_YYYYMMDD_HHMMSS.json`
-*   `downloads/F-A0010-001_YYYYMMDD_HHMMSS.xml`
+```bash
+python cwa_scraper.py --format XML
+```
+
+指定輸出目錄：
+
+```bash
+python cwa_scraper.py --out-dir custom_folder
+```
+
+指定其他資料集：
+
+```bash
+python cwa_scraper.py --dataset F-C0032-001
+```
+
+完整說明：
+
+```bash
+python cwa_scraper.py --help
+```
+
+## 輸出
+
+成功下載後，檔案名稱包含 Dataset ID 與本機下載時間：
+
+```text
+downloads/F-A0010-001_YYYYMMDD_HHMMSS.json
+downloads/F-A0010-001_YYYYMMDD_HHMMSS.xml
+```
+
+下載檔案是 CWA 回應的 Runtime Evidence／Cache，不得描述為本系統自行發布的官方資料。
+
+## Fail-Closed 錯誤狀態
+
+| Exit Code | 狀態 |
+|---:|---|
+| `0` | 成功 |
+| `2` | API Key 缺失或設定錯誤 |
+| `3` | TLS 憑證驗證失敗 |
+| `4` | Timeout、連線或其他網路失敗 |
+| `5` | 401、404、其他 HTTP 或 CWA API 錯誤 |
+| `6` | JSON 解析失敗 |
+| `7` | 輸出目錄或檔案寫入失敗 |
+
+任何失敗都不得被轉換成空資料或成功訊息。
+
+## 驗證分工
+
+Implementation PR 完成後，Codex 需在獨立 Test-only PR 提供：
+
+```bash
+python -m py_compile cwa_scraper.py
+python cwa_scraper.py --help
+```
+
+並驗證：
+
+- API Key 缺失。
+- CLI Key 警告且不洩漏 Secret。
+- 401、404、Timeout、Connection Error。
+- SSL 驗證失敗時不呼叫第二次 Request，也不使用 `verify=False`。
+- Invalid JSON 不寫檔、不回報成功。
+- File Write Failure。
+- 受控環境中的去敏 Live CWA Download。
+
+未執行的項目維持 `not-run`，不得提前宣稱 Verified Conformance。

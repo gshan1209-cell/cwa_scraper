@@ -5,7 +5,7 @@ standardRef:
   repository: gshan1209-cell/GitHub-Knowledge-Hub
   path: docs/HUMAN_AGENT_DUAL_INTERFACE_STANDARD.md
   version: "1.0.0"
-  mergeCommit: 0bbac3faa636aa073e8e59eac7dc3bc0ea0bd27b
+  decisionRecord: docs/governance/decisions/2026-07-29-wave-1d-evidence-contract-approved.md
 
 humanEntry:
   status: implemented-verification-pending
@@ -19,6 +19,7 @@ agentEntry:
   depths: [brief]
   additionalRefs:
     - AGENTS.md
+    - .ai-company/status-snapshot.yaml
 
 sourceModel:
   canonicalRefs:
@@ -32,21 +33,32 @@ sourceModel:
   derivedViewRefs:
     - README.md
     - .ai-company/agent-context.yaml
+    - .ai-company/status-snapshot.yaml
 
 status:
-  consistency: not-tested
-  freshness: unknown
+  consistency: implementation-aligned-verification-pending
+  freshness: reviewed-source-recorded
   confidence: reported
   owner: cwa-scraper-owner
-  nextAction: validate CLI compile, help, failure states, TLS behavior, and one redacted live CWA download
+  nextAction: Codex test-only verification for compile, CLI, failure states, TLS and redacted live download
 
 verification:
   status: not-run
-  evidenceRefs: []
-  sourceCommit: null
+  verifiedConformance: false
+  observedSourceSha: aea842f51478ca3645b241094e69481fe2f30028
+  observedBranch: main
+  reviewedAt: "2026-07-29T19:12:46+08:00"
+  reviewer: ChatGPT-primary-development-agent
+  evidenceRefs:
+    - github://gshan1209-cell/GitHub-Knowledge-Hub/issues/14
+    - github://gshan1209-cell/GitHub-Knowledge-Hub/commit/561c7eee0dfdfae4ae070ff47e9b383029c6268e
 
 safety:
   readOnlyByDefault: true
+  tlsVerificationRequired: true
+  sslFailurePolicy: fail-closed
+  tlsVerificationBypass: forbidden
+  commandLineSecretUsage: deprecated-compatibility-only
   automaticRepositoryWrite: false
   automaticIssueCreation: false
   automaticPullRequestCreation: false
@@ -58,4 +70,5 @@ safety:
     - production-tls-policy-change
     - official-dataset-or-source-change
     - downstream-canonical-import
+    - production-unblock
     - release-or-scheduled-deployment

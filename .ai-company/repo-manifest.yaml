@@ -4,24 +4,31 @@ identity:
   repoId: cwa-scraper
   repository: gshan1209-cell/cwa_scraper
   repoClass: adapter
+  systemType: shared-weather-data-adapter
+  governanceLevel: L4
   productId: null
   productLineId: weather-data-integration
 
 ownership:
-  primaryOperatingUnit: system-development-studio
+  primaryOperatingUnit: ai-module-factory
+  parentSystem: gshan1209-cell/AI-Workstream
   participatingUnits:
-    - ai-module-factory
+    - system-development-studio
   maintainer: cwa-scraper-owner
+  consumers:
+    - gshan1209-cell/smartbuy-ai
+    - gshan1209-cell/scrape_weather
 
 lifecycle:
   status: active
   portfolioClass: supporting
   mode: command-line-data-adapter
-  currentPhase: cli-adapter-baseline
+  currentPhase: tls-fail-closed-remediation
+  productionStatus: blocked-pending-independent-verification
 
 independentOperation:
   build: true
-  test: not-assessed
+  test: implementation-present-verification-pending
   deploy: not-applicable
   release: source-distribution
   requiresCeoRuntime: false
@@ -36,31 +43,51 @@ interfaces:
     - human-agent-dual-interface-standard-v1
 
 management:
-  managementPolicy: optional
+  managementPolicy: required
   managementStatus: managed
-  managementReason: reusable CWA OpenData adapter for weather-data consumers
+  managementReason: reusable L4 CWA OpenData adapter for weather-data consumers
   ceoReportingEnabled: true
   dualInterfaceProfile: minimal
+  statusSnapshotPath: .ai-company/status-snapshot.yaml
   sourceOfTruthPaths:
     - README.md
     - AGENTS.md
     - cwa_scraper.py
     - requirements.txt
+    - .ai-company/repo-manifest.yaml
+    - .ai-company/agent-context.yaml
+    - .ai-company/status-snapshot.yaml
 
 status:
-  implementation: existing-cli
+  implementation: tls-fail-closed-implemented
   humanInterface: implemented-verification-pending
   agentInterface: implemented-verification-pending
-  runtime: not-run-for-current-adoption-change
+  runtime: not-run-for-current-implementation
   verification: not-run
-  productionReadiness: not-ready
+  verifiedConformance: false
+  productionReadiness: blocked
 
 security:
   credentialStorageInGit: forbidden
   apiKeyInContextOrEvidence: forbidden
-  commandLineSecretUsage: discouraged
-  tlsVerificationBypassForProduction: forbidden
+  environmentVariablePreferred: true
+  hiddenInteractiveInput: required
+  commandLineSecretUsage: deprecated-compatibility-only
+  tlsVerificationRequired: true
+  tlsVerificationBypass: forbidden
+  sslFailurePolicy: fail-closed
+  invalidJsonPolicy: fail-closed-no-output
   automaticCrossRepositoryWrites: disabled
   automaticMerge: disabled
   automaticRelease: disabled
   automaticDeployment: disabled
+
+evidence:
+  observedSourceSha: aea842f51478ca3645b241094e69481fe2f30028
+  observedBranch: main
+  reviewedAt: "2026-07-29T19:12:46+08:00"
+  reviewer: ChatGPT-primary-development-agent
+  verificationStatus: not-run
+  evidenceRefs:
+    - github://gshan1209-cell/GitHub-Knowledge-Hub/issues/14
+    - github://gshan1209-cell/GitHub-Knowledge-Hub/commit/561c7eee0dfdfae4ae070ff47e9b383029c6268e
