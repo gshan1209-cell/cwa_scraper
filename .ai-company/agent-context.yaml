@@ -1,0 +1,121 @@
+schemaVersion: "1.0"
+systemIdentity:
+  repository: gshan1209-cell/cwa_scraper
+  systemId: cwa-scraper
+  systemType: adapter
+  profile: minimal
+  roles:
+    - cwa-open-data-download-adapter
+    - weather-file-ingestion-helper
+
+context:
+  generatedAt: "2026-07-29T15:33:00+08:00"
+  freshness: unknown
+  depth: brief
+  digest: sha256:2a73f3131a62d9a96c50f6fb270d1ba088d343c1975652253ac14dee1eae8a21
+  digestBasis: repository-profile-phase-status-next-action-and-source-references
+  changedSinceDigest: null
+  canonical: false
+  readOnly: true
+  status: baseline-recorded
+
+briefing:
+  headline: CWA Scraper is an existing Python CLI for downloading CWA JSON or XML files; current compile, failure-state, TLS and live-data behavior were not validated in this adoption change.
+  currentPhase: cli-adapter-baseline
+  highestPriority:
+    - validate Python compile and CLI help
+    - verify explicit failure behavior for missing key, 401, 404, timeout and invalid JSON
+    - assess and remove unsafe automatic TLS verification bypass before production use
+
+state:
+  status: implemented-verification-pending
+  phase: cli-adapter-baseline
+  progress: null
+  confidence: reported
+  integrity: not-tested
+
+attention:
+  blockers:
+    - id: live-cwa-key-required
+      status: conditional
+      severity: medium
+      title: A redacted live-data validation requires a valid CWA API key in a controlled environment.
+  risks:
+    - id: tls-verification-bypass
+      status: open
+      severity: high
+      title: Current code retries with verify=False after an SSL verification failure.
+    - id: command-line-secret-exposure
+      status: open
+      severity: medium
+      title: Passing the API key through command-line arguments may expose it in shell history or process listings.
+    - id: downloaded-file-not-canonical
+      status: open
+      severity: medium
+      title: Downloaded files are runtime evidence or cache and must not be treated as independently authored official data.
+  driftFindings: []
+  pullRequests: []
+
+execution:
+  nextActions:
+    - id: validate-cwa-cli-baseline
+      priority: P0
+      status: ready
+      owner: cwa-scraper-owner
+      title: Validate CLI compile, help, failure states, TLS behavior, and one redacted live CWA download.
+  owners:
+    - id: cwa-scraper-owner
+      responsibility: adapter-code-dataset-parameters-output-and-release
+    - id: ai-workstream
+      responsibility: dual-interface-template-planner-validator-and-adoption-flow
+    - id: github-knowledge-hub
+      responsibility: architecture-standard-and-compliance-assessment
+    - id: ai-ceo-control-tower
+      responsibility: portfolio-observation-and-global-context
+    - id: codex
+      responsibility: controlled-live-api-and-environment-validation-when-required
+  dependencies:
+    - source: cwa-scraper
+      dependsOn: cwa-open-data-file-api-v1
+      purpose: official weather dataset retrieval
+    - source: cwa-scraper
+      dependsOn: gshan1209-cell/GitHub-Knowledge-Hub@0bbac3faa636aa073e8e59eac7dc3bc0ea0bd27b
+      purpose: canonical Human／Agent dual-interface standard
+  allowedOperations:
+    - read-derived-context
+    - inspect-source-and-official-dataset-references
+    - prepare-change-on-feature-branch
+    - run-non-secret-compile-help-and-fixture-validation
+    - run-redacted-live-download-in-controlled-environment
+    - prepare-pull-request-with-evidence
+  forbiddenOperations:
+    - treat-derived-context-or-downloaded-file-as-canonical
+    - expose-or-persist-api-key
+    - mark-live-download-as-passed-without-execution
+    - normalize-failure-to-empty-success
+    - make-tls-bypass-a-production-default
+    - automatic-merge-release-or-deployment
+  humanApprovalRequiredFor:
+    - credential-or-secret-change
+    - production-tls-policy-change
+    - official-dataset-or-source-change
+    - downstream-canonical-import
+    - release-or-scheduled-deployment
+  primaryDevelopmentAgent: current-task-owner
+  codexRole: controlled-live-api-and-environment-validation-when-required
+
+evidence:
+  sourceCommit: null
+  sourceRefs:
+    - README.md
+    - AGENTS.md
+    - cwa_scraper.py
+    - requirements.txt
+    - .ai-company/repo-manifest.yaml
+  verificationRefs: []
+
+limitations:
+  - Python compile and CLI help were not executed in this adoption change.
+  - No live CWA request was executed and no API key was accessed.
+  - Existing automatic TLS verification bypass remains an open risk and was not modified by this governance-only change.
+  - Digest is a static baseline; automatic regeneration and since-digest comparison are not implemented.
