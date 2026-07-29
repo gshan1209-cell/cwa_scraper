@@ -1,0 +1,61 @@
+schemaVersion: "1.0"
+repository: gshan1209-cell/cwa_scraper
+profile: minimal
+standardRef:
+  repository: gshan1209-cell/GitHub-Knowledge-Hub
+  path: docs/HUMAN_AGENT_DUAL_INTERFACE_STANDARD.md
+  version: "1.0.0"
+  mergeCommit: 0bbac3faa636aa073e8e59eac7dc3bc0ea0bd27b
+
+humanEntry:
+  status: implemented-verification-pending
+  type: readme
+  path: README.md
+
+agentEntry:
+  status: implemented-verification-pending
+  type: context-file
+  path: .ai-company/agent-context.yaml
+  depths: [brief]
+  additionalRefs:
+    - AGENTS.md
+
+sourceModel:
+  canonicalRefs:
+    - .ai-company/repo-manifest.yaml
+    - README.md
+    - AGENTS.md
+    - cwa_scraper.py
+    - requirements.txt
+  runtimeEvidenceRefs:
+    - downloads/
+  derivedViewRefs:
+    - README.md
+    - .ai-company/agent-context.yaml
+
+status:
+  consistency: not-tested
+  freshness: unknown
+  confidence: reported
+  owner: cwa-scraper-owner
+  nextAction: validate CLI compile, help, failure states, TLS behavior, and one redacted live CWA download
+
+verification:
+  status: not-run
+  evidenceRefs: []
+  sourceCommit: null
+
+safety:
+  readOnlyByDefault: true
+  automaticRepositoryWrite: false
+  automaticIssueCreation: false
+  automaticPullRequestCreation: false
+  automaticMerge: false
+  automaticRelease: false
+  automaticDeployment: false
+  humanApprovalRequiredFor:
+    - credential-or-secret-change
+    - production-tls-policy-change
+    - official-dataset-or-source-change
+    - downstream-canonical-import
+    - release-or-scheduled-deployment
