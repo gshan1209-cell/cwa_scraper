@@ -21,6 +21,21 @@ agentEntry:
     - AGENTS.md
     - .ai-company/status-snapshot.yaml
 
+executionPolicy:
+  canonicalPolicy: DS-003@2.1.1
+  responsibility: RESP-DEV-AGENT-001@2.1.1
+  validationTaskProcedure: PROC-VALIDATION-TASK-001@2.1.1
+  codexProcedure: PROC-CODEX-POST-MAIN-VALIDATION-001@1.1.1
+  chatgptAuditProcedure: PROC-CHATGPT-AUDIT-001@2.1.1
+  issueClosureProcedure: PROC-ISSUE-CLOSURE-001@2.1.1
+  currentValidationTask: AI-Workstream#242
+  postMainSupplementalValidation: true
+  testPullRequest: null
+  validatorRepositoryWrite: false
+  validatorRemediation: false
+  pendingValidationFreezesMain: false
+  skippedValidationMayBePassed: false
+
 sourceModel:
   canonicalRefs:
     - .ai-company/repo-manifest.yaml
@@ -36,28 +51,35 @@ sourceModel:
     - .ai-company/status-snapshot.yaml
 
 status:
-  consistency: implementation-aligned-verification-pending
-  freshness: reviewed-source-recorded
+  consistency: implementation-merged-validation-pending
+  freshness: observed-source-recorded
   confidence: reported
   owner: cwa-scraper-owner
-  nextAction: Codex test-only verification for compile, CLI, failure states, TLS and redacted live download
+  implementation: merged-validation-pending
+  productionStatus: blocked-pending-independent-live-evidence
+  liveCwaDownload: not-run-blocked-pending-api-key
+  nextAction: validate execution-time latest Main read-only through AI-Workstream#242; run controlled live CWA only if an authorized key is already available
 
 verification:
-  status: not-run
+  status: current-validation-pending
   verifiedConformance: false
-  observedSourceSha: aea842f51478ca3645b241094e69481fe2f30028
+  observedSourceSha: 1fe9f8965016f2eeb0c9e4e18c4a9155677c7c5f
   observedBranch: main
-  reviewedAt: "2026-07-29T19:12:46+08:00"
+  reviewedAt: "2026-08-19T17:00:00+08:00"
   reviewer: ChatGPT-primary-development-agent
   evidenceRefs:
-    - github://gshan1209-cell/GitHub-Knowledge-Hub/issues/14
-    - github://gshan1209-cell/GitHub-Knowledge-Hub/commit/561c7eee0dfdfae4ae070ff47e9b383029c6268e
+    - github://gshan1209-cell/cwa_scraper/issues/3
+    - github://gshan1209-cell/cwa_scraper/issues/5
+    - github://gshan1209-cell/cwa_scraper/pull/4
+    - github://gshan1209-cell/AI-Workstream/issues/242
+    - github://gshan1209-cell/GitHub-Knowledge-Hub/commit/9fd78ea2718ee2e745554c65c0ccb98d98ee46f5
 
 safety:
   readOnlyByDefault: true
   tlsVerificationRequired: true
   sslFailurePolicy: fail-closed
   tlsVerificationBypass: forbidden
+  apiKeyInContextOrEvidence: forbidden
   commandLineSecretUsage: deprecated-compatibility-only
   automaticRepositoryWrite: false
   automaticIssueCreation: false
