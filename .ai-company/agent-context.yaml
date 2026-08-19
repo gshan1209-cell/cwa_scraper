@@ -12,69 +12,87 @@ systemIdentity:
     - weather-file-ingestion-helper
 
 context:
-  generatedAt: "2026-07-29T19:12:46+08:00"
-  freshness: reviewed-source-recorded
+  generatedAt: "2026-08-19T17:00:00+08:00"
+  freshness: observed-source-recorded
   depth: brief
-  changedSinceDigest: implementation-updated-pending-independent-verification
+  changedSinceDigest: validation-authority-migrated-current-main-recorded
   canonical: false
   readOnly: true
-  status: implementation-complete-verification-pending
+  status: implementation-merged-validation-pending
 
 briefing:
-  headline: CWA Scraper now implements TLS fail-closed behavior and explicit failure states; compile, fixture behavior and redacted live download remain unverified until a Codex test-only PR is completed.
+  headline: CWA Scraper implements TLS fail-closed behavior and explicit failure states on Main. Historical PR #4 provides 20/20 mock/security provenance; current DS-003@2.1.1 validation is AI-Workstream #242, and a controlled live CWA download remains not-run pending an authorized API key.
   currentPhase: tls-fail-closed-remediation
   highestPriority:
-    - merge the focused security implementation without claiming Runtime verification
-    - run independent compile, CLI, fixture, TLS and failure-state validation
-    - execute one redacted live CWA download in a controlled environment
+    - preserve TLS fail-closed and secret-safety behavior
+    - validate execution-time latest Main read-only through AI-Workstream #242
+    - execute one redacted live CWA download only when an authorized key is already available
 
 state:
-  status: implementation-complete-verification-pending
+  status: implementation-merged-validation-pending
   phase: tls-fail-closed-remediation
   progress: null
   confidence: reported
-  integrity: not-tested
-  productionStatus: blocked-pending-independent-verification
+  integrity: historical-security-evidence-current-validation-pending
+  implementation: merged-validation-pending
+  productionStatus: blocked-pending-independent-live-evidence
   verifiedConformance: false
+  liveCwaDownload: not-run-blocked-pending-api-key
 
 attention:
   blockers:
-    - id: independent-security-validation-required
+    - id: current-independent-validation-required
       status: open
       severity: high
-      title: Production remains blocked until Codex verifies TLS fail-closed behavior and failure states on the exact remediated Head.
+      title: Production remains blocked until current latest-Main security/TLS validation is bound to AI-Workstream #242 and the live limitation is resolved or explicitly accepted.
     - id: live-cwa-key-required
       status: conditional
       severity: medium
-      title: Redacted live-data validation requires a valid CWA API key in a controlled environment.
+      title: Redacted live-data validation requires an authorized CWA API key already present in a controlled environment.
   risks:
     - id: command-line-secret-exposure
-      status: mitigated-pending-verification
+      status: mitigated-pending-current-validation
       severity: medium
-      title: --api-key remains for backward compatibility but now emits a warning; environment or hidden interactive input is required for normal use.
+      title: --api-key remains for backward compatibility but emits a warning; environment or hidden interactive input is required for normal use.
     - id: invalid-json-success-confusion
-      status: mitigated-pending-verification
+      status: mitigated-pending-current-validation
       severity: high
-      title: Invalid JSON now fails without writing an output file, but the behavior has not yet been independently executed.
+      title: Invalid JSON fails without writing an output file; current latest-Main validation remains pending.
     - id: downloaded-file-not-canonical
       status: open
       severity: medium
       title: Downloaded files are Runtime Evidence or Cache and must not be treated as independently authored official data.
-  resolvedInImplementation:
-    - id: tls-verification-bypass
-      previousStatus: open-high
-      implementationStatus: removed-pending-verification
-      title: Automatic retry with verify=False was removed; SSL failure now exits fail-closed.
+  historicalEvidence:
+    - id: historical-pr4-security-suite
+      status: provenance-only
+      result: 20/20-passed
+      liveCwaDownload: not-run-blocked-pending-api-key
   driftFindings: []
   pullRequests: []
 
 execution:
+  developmentExecutionResponsibility:
+    companyOwner: gshan1209-cell/AI-Workstream
+    localOwner: cwa-scraper-owner
+    canonicalPolicy: DS-003@2.1.1
+    responsibility: RESP-DEV-AGENT-001@2.1.1
+    validationTaskProcedure: PROC-VALIDATION-TASK-001@2.1.1
+    codexProcedure: PROC-CODEX-POST-MAIN-VALIDATION-001@1.1.1
+    chatgptAuditProcedure: PROC-CHATGPT-AUDIT-001@2.1.1
+    issueClosureProcedure: PROC-ISSUE-CLOSURE-001@2.1.1
+    currentValidationTask: AI-Workstream#242
+    primaryAgentDefault: current-task-owner
+    codexUse: post-main-read-only-supplemental-validation
+    testPullRequest: null
+    validatorRepositoryWrite: false
+    validatorRemediation: false
+    pendingValidationFreezesMain: false
   nextActions:
-    - id: codex-verify-cwa-security-baseline
+    - id: validate-current-cwa-security-baseline
       priority: P0
-      status: ready-after-implementation-merge
-      owner: codex
-      title: Create a test-only PR validating compile, CLI help, failure states, TLS call count, no verify=False, output behavior, and one redacted live download.
+      status: ready
+      owner: independent-validator
+      title: Claim AI-Workstream #242 and validate execution-time latest Main read-only, including a controlled redacted live download only if an authorized key is already available.
   owners:
     - id: cwa-scraper-owner
       responsibility: adapter-code-dataset-parameters-output-and-release
@@ -84,8 +102,8 @@ execution:
       responsibility: canonical-governance-standard-and-compliance-assessment
     - id: ai-ceo-control-tower
       responsibility: portfolio-read-model-and-global-context
-    - id: codex
-      responsibility: independent-controlled-live-api-and-environment-validation
+    - id: independent-validator
+      responsibility: post-main-read-only-validation-evidence-and-findings
   consumers:
     - gshan1209-cell/smartbuy-ai
     - gshan1209-cell/scrape_weather
@@ -94,17 +112,17 @@ execution:
       dependsOn: cwa-open-data-file-api-v1
       purpose: official weather dataset retrieval
     - source: cwa-scraper
-      dependsOn: gshan1209-cell/AI-Workstream
+      dependsOn: gshan1209-cell/AI-Workstream@696c0dcbaaf5a5ac40e80de9df2b0d428fcc3d7d
       purpose: parent system and development execution policy
     - source: cwa-scraper
-      dependsOn: gshan1209-cell/GitHub-Knowledge-Hub@561c7eee0dfdfae4ae070ff47e9b383029c6268e
-      purpose: approved Evidence Contract and governance decisions
+      dependsOn: gshan1209-cell/GitHub-Knowledge-Hub@9fd78ea2718ee2e745554c65c0ccb98d98ee46f5
+      purpose: current canonical governance authority
   allowedOperations:
     - read-derived-context
     - inspect-source-and-official-dataset-references
     - prepare-change-on-feature-branch
     - run-non-secret-compile-help-and-fixture-validation
-    - run-redacted-live-download-in-controlled-environment
+    - run-redacted-live-download-in-controlled-environment-when-authorized-key-exists
     - prepare-pull-request-with-evidence
   forbiddenOperations:
     - treat-derived-context-or-downloaded-file-as-canonical
@@ -114,6 +132,8 @@ execution:
     - disable-tls-verification
     - retry-with-verify-false
     - automatic-merge-release-or-deployment
+    - validator-repository-write
+    - validator-remediation
   humanApprovalRequiredFor:
     - credential-or-secret-change
     - production-tls-policy-change
@@ -122,14 +142,14 @@ execution:
     - production-unblock
     - release-or-scheduled-deployment
   primaryDevelopmentAgent: current-task-owner
-  codexRole: independent-test-only-validation-on-exact-remediated-head
+  codexRole: post-main-read-only-supplemental-validation-when-required
 
 evidence:
-  observedSourceSha: aea842f51478ca3645b241094e69481fe2f30028
+  observedSourceSha: 1fe9f8965016f2eeb0c9e4e18c4a9155677c7c5f
   observedBranch: main
-  reviewedAt: "2026-07-29T19:12:46+08:00"
+  reviewedAt: "2026-08-19T17:00:00+08:00"
   reviewer: ChatGPT-primary-development-agent
-  verificationStatus: not-run
+  verificationStatus: current-validation-pending
   sourceRefs:
     - README.md
     - AGENTS.md
@@ -139,12 +159,15 @@ evidence:
     - .ai-company/dual-interface.yaml
     - .ai-company/status-snapshot.yaml
   evidenceRefs:
-    - github://gshan1209-cell/GitHub-Knowledge-Hub/issues/14
-    - github://gshan1209-cell/GitHub-Knowledge-Hub/commit/561c7eee0dfdfae4ae070ff47e9b383029c6268e
+    - github://gshan1209-cell/cwa_scraper/issues/3
+    - github://gshan1209-cell/cwa_scraper/issues/5
+    - github://gshan1209-cell/cwa_scraper/pull/4
+    - github://gshan1209-cell/AI-Workstream/issues/242
+    - github://gshan1209-cell/GitHub-Knowledge-Hub/commit/9fd78ea2718ee2e745554c65c0ccb98d98ee46f5
   verificationRefs: []
 
 limitations:
-  - Python compile and CLI help were not executed by this GitHub-only implementation change.
-  - Failure-state mocks and filesystem behavior were not executed.
-  - No live CWA request was executed and no API key was accessed.
-  - Production remains blocked until independent Test-only Evidence exists.
+  - Historical 20/20 mock/security evidence remains provenance only until current validation binds execution-time latest Main.
+  - No current controlled live CWA request was executed and no API key was accessed.
+  - Production remains blocked pending current validation/live Evidence or explicit accepted limitation.
+  - No Release, Deployment or Production Unblock is authorized.

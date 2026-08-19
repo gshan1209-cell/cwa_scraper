@@ -61,6 +61,7 @@ verificationStatus: not-run|partial|passed|failed|blocked
 - Invalid JSON 不得保存原始內容後繼續宣稱完成。
 - 輸出必須保留 Dataset ID 與下載時間；來源固定為 CWA File API。
 - README、Manifest、Context 或程式碼存在，不代表 Runtime、TLS、Schema 或資料正確性已驗證。
+- Historical PR #4 的 20/20 security/mock Evidence 保留作 provenance；current validation 必須由 AI-Workstream #242 綁定 execution-time latest Main。
 
 ## 5. 強制安全規則
 
@@ -73,42 +74,57 @@ verificationStatus: not-run|partial|passed|failed|blocked
 - API Key 不得提交到 Git、Log、Context、Snapshot、Test Fixture 或 Evidence。
 - 不得自動修改正式資料來源、Dataset ID、Credential、TLS Policy、排程、Release 或 Deployment。
 
-## 6. 修改範圍
+## 6. Development / Validation Boundary
 
-修改前先確認任務是否只涉及：
+一個 Implementation Scope 使用一個 Branch 與一個正常 Repository-local PR。Primary Development Agent 負責實作、remediation 與可用的 Sandbox-first/focused validation；PR 自身 Merge Gate滿足後可合併 Main，Pending Supplemental Validation 不凍結 Main。
 
-- CLI Argument 或 Secret Resolution。
-- CWA API Request。
-- TLS／Timeout／HTTP Failure。
-- Response Parsing。
-- Output File。
-- Preview Display。
-- Documentation／Governance。
+需要受控 Live API、完整環境或獨立安全驗證時，使用 AI-Workstream Post-Main Validation Task；目前 TLS/live handoff 是 `AI-Workstream#242`。Qualified independent validator 只讀 execution-time latest Main、記錄 exact `testedMainSha`、回傳 Evidence／Findings，不建立 test-only PR。
 
-一個 Implementation Scope 使用一個 Branch 與一個 PR。完成的 Implementation 可以先合併；需要受控 Live API、完整環境或獨立安全驗證時，另開 Codex Test-only PR。
+Current exact authority：
+
+```yaml
+policy: DS-003@2.1.1
+responsibility: RESP-DEV-AGENT-001@2.1.1
+validationTaskProcedure: PROC-VALIDATION-TASK-001@2.1.1
+codexProcedure: PROC-CODEX-POST-MAIN-VALIDATION-001@1.1.1
+chatgptAuditProcedure: PROC-CHATGPT-AUDIT-001@2.1.1
+issueClosureProcedure: PROC-ISSUE-CLOSURE-001@2.1.1
+currentValidationTask: AI-Workstream#242
+testPullRequest: null
+validatorRepositoryWrite: false
+validatorRemediation: false
+validatorBranchCreation: false
+validatorPullRequestCreation: false
+validatorMerge: false
+validatorSourceIssueClosure: false
+pendingValidationFreezesMain: false
+```
+
+Known GitHub Actions account-level quota／billing／spending-limit pre-execution blocker 使用 `WAIVED_BY_OWNER / NOT_RUN`，不得主動 rerun 只為重現相同 blocker，也不得表示為 PASS。
 
 ## 7. 驗證要求
 
-基本驗證：
+Current read-only validation至少涵蓋：
 
 ```bash
-python -m py_compile cwa_scraper.py
+python -m py_compile cwa_scraper.py test_codex_verification.py
 python cwa_scraper.py --help
+python -m unittest test_codex_verification -v
 ```
 
-Codex Test-only PR 至少驗證：
+並確認：
 
-1. Missing Key 回傳 Exit Code 2。
+1. Missing Key → Exit Code `2`。
 2. CLI Key 會警告，但不得輸出 Key 本身。
-3. SSL Failure 回傳 Exit Code 3，且 Mock 確認只呼叫一次 Request、沒有 `verify=False`。
-4. Timeout／Connection Error 回傳 Exit Code 4。
-5. 401／404／HTTP Error 回傳 Exit Code 5。
-6. Invalid JSON 回傳 Exit Code 6 且不建立輸出檔。
-7. File Write Failure 回傳 Exit Code 7。
+3. SSL Failure → Exit Code `3`，只能呼叫一次 Request、沒有 `verify=False`。
+4. Timeout／Connection Error → Exit Code `4`。
+5. 401／404／HTTP Error → Exit Code `5`。
+6. Invalid JSON → Exit Code `6` 且不建立輸出檔。
+7. File Write Failure → Exit Code `7`。
 8. JSON／XML 成功案例。
-9. 受控環境中的去敏 Live CWA Download。
+9. Environment Key 優先；互動式輸入使用 `getpass`，不得回顯 Secret。
 
-沒有命令輸出、Mock Evidence、去敏 Live Evidence 或可重現步驟時，不得標記 Passed。
+受控 Live CWA Download 僅在 authorized `CWA_API_KEY` 已存在於受控環境時執行；沒有 Key 時維持 `blocked/not-run`，不得要求、輸出或保存 Credential，也不得將 Mock Evidence當 Live PASS。
 
 ## 8. 人工核准邊界
 

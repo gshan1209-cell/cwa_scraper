@@ -24,7 +24,7 @@ lifecycle:
   portfolioClass: supporting
   mode: command-line-data-adapter
   currentPhase: tls-fail-closed-remediation
-  productionStatus: blocked-pending-independent-verification
+  productionStatus: blocked-pending-independent-live-evidence
 
 independentOperation:
   build: true
@@ -41,6 +41,23 @@ interfaces:
   consumes:
     - cwa-open-data-file-api-v1
     - human-agent-dual-interface-standard-v1
+
+executionPolicy:
+  companyOwner: gshan1209-cell/AI-Workstream
+  canonicalPolicy: DS-003@2.1.1
+  responsibility: RESP-DEV-AGENT-001@2.1.1
+  validationTaskProcedure: PROC-VALIDATION-TASK-001@2.1.1
+  codexProcedure: PROC-CODEX-POST-MAIN-VALIDATION-001@1.1.1
+  chatgptAuditProcedure: PROC-CHATGPT-AUDIT-001@2.1.1
+  issueClosureProcedure: PROC-ISSUE-CLOSURE-001@2.1.1
+  currentValidationTask: AI-Workstream#242
+  focusedImplementationMayMergeBeforeSupplementalValidation: true
+  postMainSupplementalValidation: true
+  testPullRequest: null
+  validatorRepositoryWrite: false
+  validatorRemediation: false
+  pendingValidationFreezesMain: false
+  skippedValidationMayBePassed: false
 
 management:
   managementPolicy: required
@@ -59,11 +76,11 @@ management:
     - .ai-company/status-snapshot.yaml
 
 status:
-  implementation: tls-fail-closed-implemented
+  implementation: merged-validation-pending
   humanInterface: implemented-verification-pending
   agentInterface: implemented-verification-pending
-  runtime: not-run-for-current-implementation
-  verification: not-run
+  runtime: historical-security-evidence-current-live-not-run
+  verification: current-post-main-validation-pending
   verifiedConformance: false
   productionReadiness: blocked
 
@@ -83,11 +100,15 @@ security:
   automaticDeployment: disabled
 
 evidence:
-  observedSourceSha: aea842f51478ca3645b241094e69481fe2f30028
+  observedSourceSha: 1fe9f8965016f2eeb0c9e4e18c4a9155677c7c5f
   observedBranch: main
-  reviewedAt: "2026-07-29T19:12:46+08:00"
+  reviewedAt: "2026-08-19T17:00:00+08:00"
   reviewer: ChatGPT-primary-development-agent
-  verificationStatus: not-run
+  verificationStatus: current-validation-pending
   evidenceRefs:
-    - github://gshan1209-cell/GitHub-Knowledge-Hub/issues/14
-    - github://gshan1209-cell/GitHub-Knowledge-Hub/commit/561c7eee0dfdfae4ae070ff47e9b383029c6268e
+    - github://gshan1209-cell/cwa_scraper/issues/3
+    - github://gshan1209-cell/cwa_scraper/issues/5
+    - github://gshan1209-cell/cwa_scraper/pull/4
+    - github://gshan1209-cell/AI-Workstream/issues/242
+    - github://gshan1209-cell/AI-Workstream/commit/696c0dcbaaf5a5ac40e80de9df2b0d428fcc3d7d
+    - github://gshan1209-cell/GitHub-Knowledge-Hub/commit/9fd78ea2718ee2e745554c65c0ccb98d98ee46f5
