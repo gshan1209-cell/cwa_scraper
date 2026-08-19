@@ -3,6 +3,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 SURFACES = [
+    ROOT / "README.md",
     ROOT / "AGENTS.md",
     ROOT / ".ai-company" / "repo-manifest.yaml",
     ROOT / ".ai-company" / "agent-context.yaml",
@@ -37,12 +38,19 @@ def test_current_post_main_validation_handoff_is_projected() -> None:
     for ref in CURRENT_CHAIN:
         assert ref in agents
 
-    joined = "\n".join(read(path) for path in SURFACES[1:])
+    joined = "\n".join(read(path) for path in SURFACES[2:])
     assert "DS-003@2.1.1" in joined
     assert "testPullRequest: null" in joined
     assert "validatorRepositoryWrite: false" in joined
     assert "pendingValidationFreezesMain: false" in joined
     assert "AI-Workstream#242" in joined
+
+
+def test_readme_points_to_current_validation_handoff() -> None:
+    readme = read(ROOT / "README.md")
+    assert "AI-Workstream #242" in readme
+    assert "testPullRequest: null" in readme
+    assert "blocked-pending-independent-live-evidence" in readme
 
 
 def test_status_no_longer_claims_pending_merge() -> None:
