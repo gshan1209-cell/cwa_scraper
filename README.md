@@ -14,7 +14,7 @@
 - API Key 不得寫入 Git、Log、Agent Context 或 Evidence。
 - JSON 解析失敗不會保存原始內容並誤報成功。
 
-目前 Production Status 維持 `blocked-pending-independent-verification`，需由 Codex 完成獨立 Test-only PR 後才能重新評估。
+目前 Production Status 維持 `blocked-pending-independent-live-evidence`。Current TLS／Live validation handoff 是 **AI-Workstream #242**，依 `DS-003@2.1.1` 對 execution-time latest Main 做唯讀 Supplemental Validation；`testPullRequest: null`。Historical PR #4 的 20/20 security/mock Evidence 僅保留作 provenance，受控 Live CWA Download 仍是 `not-run / blocked-pending-api-key`。
 
 ## 前提條件
 
@@ -113,11 +113,16 @@ downloads/F-A0010-001_YYYYMMDD_HHMMSS.xml
 
 ## 驗證分工
 
-Implementation PR 完成後，Codex 需在獨立 Test-only PR 提供：
+Implementation/Fix PR 完成並通過自身 Merge Gate 後可以先合併 Main；Pending Supplemental Validation 不凍結 Main。
+
+Current TLS／Live scope 由 **AI-Workstream #242** 執行 Post-Main read-only validation。Qualified independent validator 必須重新讀 execution-time latest Main、記錄 `testedMainSha`，並只回傳 Evidence／Findings；不得修改 Repository、建立 Branch／PR、Remediation、Merge 或關閉 Source Issue。Current validation state 為 `testPullRequest: null`。
+
+基本 current checks：
 
 ```bash
-python -m py_compile cwa_scraper.py
+python -m py_compile cwa_scraper.py test_codex_verification.py
 python cwa_scraper.py --help
+python -m unittest test_codex_verification -v
 ```
 
 並驗證：
@@ -128,6 +133,8 @@ python cwa_scraper.py --help
 - SSL 驗證失敗時不呼叫第二次 Request，也不使用 `verify=False`。
 - Invalid JSON 不寫檔、不回報成功。
 - File Write Failure。
-- 受控環境中的去敏 Live CWA Download。
+- JSON／XML success cases。
 
-未執行的項目維持 `not-run`，不得提前宣稱 Verified Conformance。
+受控 Live CWA Download 只在 authorized `CWA_API_KEY` 已存在於受控環境時執行；沒有可用 Key 時維持 `not-run / blocked-pending-api-key`，不得要求、輸出或保存 Credential，也不得把 Mock Evidence 當成 Live PASS。
+
+未執行的項目維持 `not-run`／`blocked`，不得提前宣稱 Verified Conformance 或解除 Production Block。
