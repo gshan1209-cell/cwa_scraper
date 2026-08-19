@@ -1,6 +1,6 @@
 schemaVersion: "1.0"
 repository: gshan1209-cell/cwa_scraper
-reportedAt: "2026-07-29T19:12:46+08:00"
+reportedAt: "2026-08-19T17:00:00+08:00"
 statusConfidence: reported
 
 governance:
@@ -12,43 +12,67 @@ governance:
     - gshan1209-cell/smartbuy-ai
     - gshan1209-cell/scrape_weather
 
+executionPolicy:
+  canonicalPolicy: DS-003@2.1.1
+  responsibility: RESP-DEV-AGENT-001@2.1.1
+  validationTaskProcedure: PROC-VALIDATION-TASK-001@2.1.1
+  codexProcedure: PROC-CODEX-POST-MAIN-VALIDATION-001@1.1.1
+  chatgptAuditProcedure: PROC-CHATGPT-AUDIT-001@2.1.1
+  issueClosureProcedure: PROC-ISSUE-CLOSURE-001@2.1.1
+  currentValidationTask: AI-Workstream#242
+  testPullRequest: null
+  validatorRepositoryWrite: false
+  validatorRemediation: false
+  pendingValidationFreezesMain: false
+
 currentState:
   lifecycle: active
   phase: tls-fail-closed-remediation
-  implementation: complete-pending-merge
-  verification: not-run
+  implementation: merged-validation-pending
+  verification: current-post-main-validation-pending
   verifiedConformance: false
-  productionStatus: blocked-pending-independent-verification
+  productionStatus: blocked-pending-independent-live-evidence
+  liveCwaDownload: not-run-blocked-pending-api-key
 
 security:
   tlsVerificationRequired: true
+  tlsVerificationBypass: forbidden
   sslFailurePolicy: fail-closed
-  automaticVerifyFalseRetry: removed-pending-verification
+  automaticVerifyFalseRetry: removed-historical-security-evidence-present-current-validation-pending
   invalidJsonPolicy: fail-closed-no-output
   environmentVariablePreferred: true
-  hiddenInteractiveInput: implemented-pending-verification
+  hiddenInteractiveInput: historical-security-evidence-present-current-validation-pending
   commandLineSecretUsage: deprecated-compatibility-only
-  credentialExposureCheck: not-run
+  apiKeyInContextOrEvidence: forbidden
+  credentialExposureCheck: historical-security-evidence-present-current-validation-pending
 
 failureStates:
   missingApiKey:
     exitCode: 2
-    verification: not-run
+    verification: historical-security-evidence-current-validation-pending
   tlsFailure:
     exitCode: 3
-    verification: not-run
+    verification: historical-security-evidence-current-validation-pending
   timeoutOrConnectionFailure:
     exitCode: 4
-    verification: not-run
+    verification: historical-security-evidence-current-validation-pending
   httpOrApiFailure:
     exitCode: 5
-    verification: not-run
+    verification: historical-security-evidence-current-validation-pending
   invalidJson:
     exitCode: 6
-    verification: not-run
+    verification: historical-security-evidence-current-validation-pending
   fileWriteFailure:
     exitCode: 7
-    verification: not-run
+    verification: historical-security-evidence-current-validation-pending
+
+historicalValidationEvidence:
+  pullRequest: gshan1209-cell/cwa_scraper#4
+  mergeSha: 1fe9f8965016f2eeb0c9e4e18c4a9155677c7c5f
+  mockSecuritySuite: 20/20-passed
+  chatgptSandboxRerun: 20/20-passed
+  liveCwaDownload: not-run-blocked-pending-api-key
+  authority: provenance-only
 
 humanInterface:
   status: implementation-aligned-verification-pending
@@ -63,22 +87,25 @@ agentInterface:
     - .ai-company/dual-interface.yaml
 
 evidence:
-  observedSourceSha: aea842f51478ca3645b241094e69481fe2f30028
+  observedSourceSha: 1fe9f8965016f2eeb0c9e4e18c4a9155677c7c5f
   observedBranch: main
-  reviewedAt: "2026-07-29T19:12:46+08:00"
+  reviewedAt: "2026-08-19T17:00:00+08:00"
   reviewer: ChatGPT-primary-development-agent
-  verificationStatus: not-run
+  verificationStatus: current-validation-pending
   evidenceRefs:
-    - github://gshan1209-cell/GitHub-Knowledge-Hub/issues/14
-    - github://gshan1209-cell/GitHub-Knowledge-Hub/commit/561c7eee0dfdfae4ae070ff47e9b383029c6268e
+    - github://gshan1209-cell/cwa_scraper/issues/3
+    - github://gshan1209-cell/cwa_scraper/issues/5
+    - github://gshan1209-cell/cwa_scraper/pull/4
+    - github://gshan1209-cell/AI-Workstream/issues/242
+    - github://gshan1209-cell/GitHub-Knowledge-Hub/commit/9fd78ea2718ee2e745554c65c0ccb98d98ee46f5
 
 knownLimitations:
-  - Python compile and CLI help were not executed in this GitHub-only implementation change.
-  - Failure-state mocks, filesystem behavior and TLS call-count assertions were not executed.
-  - No live CWA request was executed and no API key was accessed.
-  - Production unblock requires an independent Codex Test-only PR on the exact remediated Head.
+  - Historical 20/20 mock/security Evidence is provenance only until current DS-003 validation binds execution-time latest Main.
+  - No current controlled live CWA request was executed and no API key was accessed.
+  - Production remains blocked pending current independent validation/live Evidence or an explicitly accepted limitation.
+  - No Release, Deployment or Production Unblock is authorized.
 
 nextAction:
-  title: Merge the focused security implementation, then create an independent Codex Test-only PR
-  owner: cwa-scraper-owner
+  title: Claim AI-Workstream#242 and validate execution-time latest Main read-only; run one redacted live CWA download only if an authorized key is already available
+  owner: independent-validator
   status: ready
